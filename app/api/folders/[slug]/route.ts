@@ -37,15 +37,11 @@ export async function GET(
       );
     }
 
-    // Get public URLs for images
+    // Images already have S3 URLs in the file_path field
     const imagesWithUrls = images.map((image) => {
-      const { data } = supabase.storage
-        .from('folder-images')
-        .getPublicUrl(image.file_path);
-      
       return {
         ...image,
-        url: data.publicUrl,
+        url: image.file_path, // file_path now contains the full S3 URL
       };
     });
 
