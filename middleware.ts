@@ -7,41 +7,15 @@ const network = process.env.NEXT_PUBLIC_NETWORK as Network
 const facilitatorUrl = process.env.NEXT_PUBLIC_FACILITATOR_URL as Resource
 const cdpClientKey = process.env.NEXT_PUBLIC_CDP_CLIENT_KEY as string
 
+// Use a catch-all pattern for all content routes
+// x402-next will handle the payment gate, and the page will fetch specific folder data after payment
 const x402PaymentMiddleware = paymentMiddleware(
   address,
   {
-    '/content/folder1': {
-      price: '$0.10',
+    '/content/*': {
+      price: '$0.10', // Default price shown, actual price fetched after payment
       config: {
-        description: 'Access to folder1 content',
-      },
-      network,
-    },
-    '/content/folder2': {
-      price: '$0.10',
-      config: {
-        description: 'Access to folder2 content',
-      },
-      network,
-    },
-    '/content/folder3': {
-      price: '$0.10',
-      config: {
-        description: 'Access to folder3 content',
-      },
-      network,
-    },
-    '/content/folder4': {
-      price: '$0.10',
-      config: {
-        description: 'Access to folder4 content',
-      },
-      network,
-    },
-    '/content/folder5': {
-      price: '$0.10',
-      config: {
-        description: 'Access to folder5 content',
+        description: 'Access to premium content',
       },
       network,
     },
@@ -69,11 +43,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (metadata files)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-    '/', // Include the root path explicitly
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
