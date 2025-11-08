@@ -5,7 +5,7 @@ interface Folder {
   name: string;
   slug: string;
   wallet_address: string;
-  sol_amount: number;
+  usdc_amount: number;
   image_count: number;
   created_at: string;
 }
@@ -92,7 +92,7 @@ export default async function ContentPage({ params }: { params: Promise<{ type: 
               </div>
               <div className="bg-green-100 px-4 py-2 rounded-lg">
                 <div className="text-sm text-green-600 font-medium">✓ Unlocked</div>
-                <div className="text-lg font-bold text-green-900">{folder.sol_amount} SOL</div>
+                <div className="text-lg font-bold text-green-900">{folder.usdc_amount} USDC</div>
               </div>
             </div>
           </div>

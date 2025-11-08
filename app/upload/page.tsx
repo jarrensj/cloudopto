@@ -8,7 +8,7 @@ import { generateUniqueSlug } from "@/lib/utils";
 export default function UploadPage() {
   const [folderName, setFolderName] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
-  const [solAmount, setSolAmount] = useState('');
+  const [usdcAmount, setUsdcAmount] = useState('');
   const [images, setImages] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function UploadPage() {
       formData.append('folderName', folderName);
       formData.append('slug', slug);
       formData.append('walletAddress', walletAddress);
-      formData.append('solAmount', solAmount);
+      formData.append('usdcAmount', usdcAmount);
       
       images.forEach((image) => {
         formData.append('images', image);
@@ -49,7 +49,7 @@ export default function UploadPage() {
         // Reset form
         setFolderName('');
         setWalletAddress('');
-        setSolAmount('');
+        setUsdcAmount('');
         setImages([]);
         // Navigate back to home page
         router.push('/');
@@ -106,30 +106,30 @@ export default function UploadPage() {
               value={walletAddress}
               onChange={(e) => setWalletAddress(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none font-mono text-sm placeholder:text-gray-500 text-gray-900"
-              placeholder="Enter Solana wallet address"
+              placeholder="Enter wallet address"
               required
             />
           </div>
 
-          {/* SOL Amount */}
+          {/* USDC Amount */}
           <div>
-            <label htmlFor="solAmount" className="block text-sm font-medium text-gray-900 mb-2">
-              SOL Amount
+            <label htmlFor="usdcAmount" className="block text-sm font-medium text-gray-900 mb-2">
+              USDC Amount
               <span className="text-gray-500 text-xs ml-2">(Price to access this folder)</span>
             </label>
             <div className="relative">
               <input
                 type="number"
-                id="solAmount"
-                value={solAmount}
-                onChange={(e) => setSolAmount(e.target.value)}
+                id="usdcAmount"
+                value={usdcAmount}
+                onChange={(e) => setUsdcAmount(e.target.value)}
                 className="w-full pl-4 pr-16 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none placeholder:text-gray-500 text-gray-900"
                 placeholder="0.00"
                 step="0.01"
                 min="0"
                 required
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">SOL</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">USDC</span>
             </div>
           </div>
 

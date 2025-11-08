@@ -8,7 +8,7 @@ interface Folder {
   name: string;
   slug: string;
   wallet_address: string;
-  sol_amount: number;
+  usdc_amount: number;
   image_count: number;
   created_at: string;
 }
@@ -88,7 +88,7 @@ export default function Home() {
                     </svg>
                   </div>
                   <span className="text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                    {folder.sol_amount} SOL
+                    {folder.usdc_amount} USDC
                   </span>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">
