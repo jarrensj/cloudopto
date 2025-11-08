@@ -2,12 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { generateUniqueSlug } from "@/lib/utils";
 
 export default function UploadPage() {
   const [folderName, setFolderName] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
   const [solAmount, setSolAmount] = useState('');
   const [images, setImages] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const router = useRouter();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -15,16 +19,49 @@ export default function UploadPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log({
-      folderName,
-      walletAddress,
-      solAmount,
-      images: images.map(img => img.name)
-    });
-    alert('Upload submitted! (This is not yet connected)');
+    setIsUploading(true);
+
+    try {
+      // Generate a unique slug from the folder name
+      const slug = generateUniqueSlug(folderName);
+      
+      const formData = new FormData();
+      formData.append('folderName', folderName);
+      formData.append('slug', slug);
+      formData.append('walletAddress', walletAddress);
+      formData.append('solAmount', solAmount);
+      
+      images.forEach((image) => {
+        formData.append('images', image);
+      });
+
+      const response = await fetch('/api/folders', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`Success! Folder created with ${result.uploadedImages} image(s).`);
+        // Reset form
+        setFolderName('');
+        setWalletAddress('');
+        setSolAmount('');
+        setImages([]);
+        // Navigate back to home page
+        router.push('/');
+      } else {
+        alert(`Error: ${result.error || 'Failed to create folder'}`);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Failed to upload folder. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -146,9 +183,10 @@ export default function UploadPage() {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              disabled={isUploading}
+              className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Create Folder & Upload
+              {isUploading ? 'Uploading...' : 'Create Folder & Upload'}
             </button>
           </div>
         </form>

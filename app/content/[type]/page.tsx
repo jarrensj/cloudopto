@@ -1,45 +1,11 @@
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
+'use client';
 
-const CONTENT_CONFIG = {
-  folder1: {
-    price: '0.10',
-    title: 'Folder 1',
-    message: 'Folder 1!',
-  },
-  folder2: {
-    price: '0.10',
-    title: 'Folder 2',
-    message: 'Folder 2!',
-  },
-  folder3: {
-    price: '0.10',
-    title: 'Folder 3',
-    message: 'Folder 3!',
-  },
-  folder4: {
-    price: '0.10',
-    title: 'Folder 4',
-    message: 'Folder 4!',
-  },
-  folder5: {
-    price: '0.10',
-    title: 'Folder 5',
-    message: 'Folder 5!',
-  },
-} as const
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
 
-type ContentType = keyof typeof CONTENT_CONFIG
-
-export default async function ContentPage({ params }: { params: Promise<{ type: string }> }) {
-  const { type } = await params
-
-  if (!['folder1', 'folder2', 'folder3', 'folder4', 'folder5'].includes(type)) {
-    notFound()
-  }
-
-  const contentType = type as ContentType
-  const config = CONTENT_CONFIG[contentType]
+export default function ContentPage() {
+  const params = useParams();
+  const slug = params.type as string;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
@@ -53,16 +19,16 @@ export default async function ContentPage({ params }: { params: Promise<{ type: 
             </div>
             
             <h1 className="text-3xl font-bold text-gray-900 mb-3 text-center">
-              {config.title} Unlocked
+              Content Unlocked!
             </h1>
             
             <p className="text-gray-600 text-center text-lg mb-6">
-              {config.message}
+              You now have access to: <strong>{slug}</strong>
             </p>
             
             <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-center">
               <div className="text-sm text-gray-500 mb-1">Payment Confirmed</div>
-              <div className="text-2xl font-bold text-gray-900">${config.price}</div>
+              <div className="text-2xl font-bold text-gray-900">✓ Access Granted</div>
             </div>
           </div>
 
@@ -71,14 +37,14 @@ export default async function ContentPage({ params }: { params: Promise<{ type: 
               href="/"
               className="block w-full px-4 py-3 bg-gray-900 text-white text-center rounded-lg font-medium hover:bg-gray-800 transition-colors"
             >
-              Home
+              Back to Home
             </Link>
             <div className="text-center text-sm text-gray-500">
-              Payment successful
+              Payment successful • Folder: {slug}
             </div>
           </div>
         </div>
       </main>
     </div>
-  )
+  );
 }
