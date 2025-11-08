@@ -12,12 +12,20 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
+        <div className="flex justify-end mb-6">
+          <Link
+            href="/upload"
+            className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Upload
+          </Link>
+        </div>
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Premium Content Library
+            Photo Content Library
           </h1>
           <p className="text-lg text-gray-600">
-            Select a folder to unlock exclusive content
+            Select a folder to unlock the photos
           </p>
         </div>
 
