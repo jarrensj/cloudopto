@@ -9,10 +9,10 @@ export async function POST(request: NextRequest) {
     const folderName = formData.get('folderName') as string;
     const slug = formData.get('slug') as string;
     const walletAddress = formData.get('walletAddress') as string;
-    const solAmount = formData.get('solAmount') as string;
+    const usdcAmount = formData.get('usdcAmount') as string;
     const images = formData.getAll('images') as File[];
 
-    if (!folderName || !slug || !walletAddress || !solAmount || images.length === 0) {
+    if (!folderName || !slug || !walletAddress || !usdcAmount || images.length === 0) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         name: folderName,
         slug: slug,
         wallet_address: walletAddress,
-        sol_amount: parseFloat(solAmount),
+        usdc_amount: parseFloat(usdcAmount),
         image_count: images.length,
       })
       .select()

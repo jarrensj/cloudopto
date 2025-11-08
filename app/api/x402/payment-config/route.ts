@@ -9,7 +9,7 @@ export async function GET() {
     // Fetch all folders to build payment config
     const { data: folders, error } = await supabase
       .from('folders')
-      .select('slug, name, sol_amount, wallet_address')
+      .select('slug, name, usdc_amount, wallet_address')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -25,7 +25,7 @@ export async function GET() {
     
     folders.forEach((folder) => {
       paymentConfig[`/content/${folder.slug}`] = {
-        price: `$${folder.sol_amount.toFixed(2)}`,
+        price: `$${folder.usdc_amount.toFixed(2)}`,
         config: {
           description: `Access to ${folder.name}`,
         },
