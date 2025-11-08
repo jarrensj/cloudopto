@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { uploadToS3 } from '@/lib/s3';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,46 +40,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Upload images to Supabase Storage and create image records
+    // Upload images to AWS S3 and create image records
     const uploadedImages = [];
     
     for (const image of images) {
-      const fileExt = image.name.split('.').pop();
-      const fileName = `${folder.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      // Convert File to ArrayBuffer then to Uint8Array
-      const arrayBuffer = await image.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
+      try {
+        const fileExt = image.name.split('.').pop();
+        const fileName = `${folder.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        // Convert File to Buffer for S3 upload
+        const arrayBuffer = await image.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('folder-images')
-        .upload(fileName, uint8Array, {
-          contentType: image.type,
-          upsert: false,
-        });
+        // Upload to S3
+        const s3Url = await uploadToS3(buffer, fileName, image.type);
 
-      if (uploadError) {
-        console.error('Error uploading image:', uploadError);
+        // Create image record in database with S3 URL
+        const { data: imageData, error: imageError } = await supabase
+          .from('images')
+          .insert({
+            folder_id: folder.id,
+            file_name: image.name,
+            file_path: s3Url, // Store the full S3 URL
+            file_size: image.size,
+            mime_type: image.type,
+          })
+          .select()
+          .single();
+
+        if (!imageError && imageData) {
+          uploadedImages.push(imageData);
+        }
+      } catch (uploadError) {
+        console.error('Error uploading image to S3:', uploadError);
         // Continue with other images even if one fails
         continue;
-      }
-
-      // Create image record in database
-      const { data: imageData, error: imageError } = await supabase
-        .from('images')
-        .insert({
-          folder_id: folder.id,
-          file_name: image.name,
-          file_path: fileName,
-          file_size: image.size,
-          mime_type: image.type,
-        })
-        .select()
-        .single();
-
-      if (!imageError && imageData) {
-        uploadedImages.push(imageData);
       }
     }
 
