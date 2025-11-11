@@ -1,0 +1,439 @@
+'use client'
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+
+declare global {
+  interface Window {
+    solana?: any
+  }
+}
+
+type PresetPrompt = {
+  id: string
+  label: string
+  description: string
+  text: string
+}
+
+const PRESET_PROMPTS: PresetPrompt[] = [
+  {
+    id: 'remove-usernames',
+    label: 'Remove chat usernames',
+    description: "",
+    text: "",
+  },
+  {
+    id: 'real-estate',
+    label: 'Stage for real estate',
+    description: '',
+    text: '',
+  },
+  {
+    id: 'make everyone a unicorn',
+    label: 'Make everyone a unicorn',
+    description: 'make everyone a unicorn',
+    text: 'make everyone a unicorn',
+  }
+]
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      const base64 = result.split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+export default function EditPage() {
+  const [selectedPromptId, setSelectedPromptId] = useState<string>(PRESET_PROMPTS[0]?.id ?? '')
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const previewUrlRef = useRef<string | null>(null)
+
+  const activePreset = useMemo(
+    () => PRESET_PROMPTS.find((preset) => preset.id === selectedPromptId),
+    [selectedPromptId],
+  )
+
+  const combinedPrompt = useMemo(() => {
+    const basePrompt = activePreset?.text?.trim() ?? ''
+    const extra = customPrompt.trim()
+
+    if (!basePrompt && !extra) {
+      return ''
+    }
+
+    if (!extra) {
+      return basePrompt
+    }
+
+    if (!basePrompt) {
+      return extra
+    }
+
+    return `${basePrompt}\n\nAdditional instructions: ${extra}`
+  }, [activePreset?.text, customPrompt])
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    console.log('File selected:', file.name, file.type, file.size)
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
+    }
+
+    setImageFile(file)
+    setGeneratedImage(null)
+    setError(null)
+    const previewUrl = URL.createObjectURL(file)
+    previewUrlRef.current = previewUrl
+    setImagePreview(previewUrl)
+    
+    console.log('Preview URL created:', previewUrl)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+    }
+  }, [])
+
+  const handleGenerate = async () => {
+    try {
+      setError(null)
+
+      if (!imageFile) {
+        setError('Please upload an image to edit.')
+        return
+      }
+
+      if (!combinedPrompt) {
+        setError('Select a preset or provide your own instructions.')
+        return
+      }
+
+      setIsGenerating(true)
+
+      const base64Image = await fileToBase64(imageFile)
+
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: combinedPrompt,
+          image: base64Image,
+          mimeType: imageFile.type,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}))
+        const message = errorPayload?.error || 'Failed to generate image. Try again in a moment.'
+        setError(message)
+        return
+      }
+
+      const result = await response.json()
+
+      const extractedBase64: string | null = result?.imageData ?? null
+
+      if (!extractedBase64) {
+        setError('The AI response did not include image data. Please try again.')
+        return
+      }
+
+      let outputMimeType = 'image/png'
+      const candidateParts =
+        result?.data?.candidates?.[0]?.content?.parts ??
+        result?.data?.candidates?.[0]?.content?.inlineData ??
+        []
+
+      if (Array.isArray(candidateParts)) {
+        for (const part of candidateParts) {
+          if (part?.inline_data?.mimeType) {
+            outputMimeType = part.inline_data.mimeType
+            break
+          }
+          if (part?.inlineData?.mimeType) {
+            outputMimeType = part.inlineData.mimeType
+            break
+          }
+        }
+      } else if (candidateParts?.mimeType) {
+        outputMimeType = candidateParts.mimeType
+      }
+
+      const dataUrl = `data:${outputMimeType};base64,${extractedBase64}`
+      setGeneratedImage(dataUrl)
+    } catch (err) {
+      console.error('Error generating image:', err)
+      setError('Unexpected error while generating image. Please try again.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900">Image Editor</h1>
+            <p className="mt-2 max-w-2xl text-base text-gray-600">
+              Upload an image, choose a preset transformation, optionally add your own instructions, and let the
+              the AI edit it. Each edit costs 1&nbsp;USDC.
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:border-gray-300 hover:text-gray-900"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back home
+          </Link>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
+          <div className="space-y-8">
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900">1. Upload your image</h2>
+              <p className="mt-1 text-sm text-gray-500">PNG, JPG, or WebP up to 10&nbsp;MB.</p>
+
+              <div className="mt-6">
+                <label
+                  htmlFor="image-upload"
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-12 text-center transition hover:border-gray-400"
+                >
+                  <svg className="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="mt-3 text-sm font-medium text-gray-700">Click to upload</span>
+                  <span className="text-xs text-gray-500">or drag & drop</span>
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleImageChange}
+                  />
+                </label>
+
+                {imageFile && (
+                  <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-100 p-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{imageFile.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(imageFile.size / (1024 * 1024)).toFixed(2)}&nbsp;MB &middot; {imageFile.type}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                      onClick={() => {
+                        if (previewUrlRef.current) {
+                          URL.revokeObjectURL(previewUrlRef.current)
+                          previewUrlRef.current = null
+                        }
+                        setImageFile(null)
+                        setImagePreview(null)
+                        setGeneratedImage(null)
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+              {imagePreview && (
+                <div className="mt-6">
+                  <p className="text-sm font-medium text-gray-900">Preview</p>
+                  <div className="mt-2 flex min-h-[240px] items-center justify-center rounded-lg border border-gray-200 bg-white p-3">
+                    <img src={imagePreview} alt="Selected upload preview" className="max-h-80 w-full rounded-lg object-contain" />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900">2. Choose a preset prompt</h2>
+              <p className="mt-1 text-sm text-gray-500">You can tweak or add more instructions below.</p>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-3">
+                {PRESET_PROMPTS.map((preset) => {
+                  const isSelected = preset.id === selectedPromptId
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPromptId(preset.id)
+                        setGeneratedImage(null)
+                        setError(null)
+                      }}
+                      className={`rounded-lg border p-4 text-left transition ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                          : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm'
+                      }`}
+                    >
+                      <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                        {preset.label}
+                      </span>
+                      <span
+                        className={`mt-2 block text-xs ${
+                          isSelected ? 'text-blue-100' : 'text-gray-600'
+                        }`}
+                      >
+                        {preset.description}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="mt-6">
+                <label htmlFor="custom-prompt" className="text-sm font-medium text-gray-900">
+                  Additional instructions (optional)
+                </label>
+                <textarea
+                  id="custom-prompt"
+                  value={customPrompt}
+                  onChange={(event) => {
+                    setCustomPrompt(event.target.value)
+                    setGeneratedImage(null)
+                    setError(null)
+                  }}
+                  placeholder="Add any extra edits you want the model to focus on..."
+                  className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+                  rows={4}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900">3. Generate</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                We&apos;ll charge 1&nbsp;USDC through the x402 paywall when you run the edit.
+              </p>
+
+              <div className="mt-4 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                <p className="font-medium text-gray-900">Prompt preview</p>
+                <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-gray-600">
+                  {combinedPrompt || 'Select a preset and/or add your own instructions to see the full prompt.'}
+                </p>
+              </div>
+
+              {error && (
+                <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isGenerating || !imageFile || !activePreset}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
+              >
+                {isGenerating ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Generating…
+                  </>
+                ) : (
+                  'Generate edited image'
+                )}
+              </button>
+            </section>
+          </div>
+
+          <aside className="space-y-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900">Preview</h2>
+              <p className="mt-1 text-sm text-gray-500">Your original upload and the AI-edited result.</p>
+
+              <div className="mt-6 space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">Original</h3>
+                  <div className="mt-2 flex min-h-[240px] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Original upload" className="max-h-80 w-full rounded-lg object-contain" />
+                    ) : (
+                      <span className="text-xs text-gray-400">Upload an image to see the preview.</span>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">Edited</h3>
+                  <div className="mt-2 flex min-h-[240px] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3">
+                    {generatedImage ? (
+                      <img src={generatedImage} alt="AI edited result" className="max-h-80 w-full rounded-lg object-contain" />
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        Run the generator to see the edited image. It will appear here once ready.
+                      </span>
+                    )}
+                  </div>
+                  {generatedImage && (
+                    <a
+                      href={generatedImage}
+                      download="edited-image.png"
+                      className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                    >
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v8m0-8l3 3m-3-3l-3 3m0-7h6" />
+                      </svg>
+                      Download edited image
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-900">How payment works</h2>
+              <ul className="mt-3 space-y-3 text-sm text-gray-600">
+                <li>
+                  • This page is protected by the <span className="font-medium text-gray-900">x402</span> paywall. You&apos;ll
+                  authorize a 1&nbsp;USDC transfer to unlock each session.
+                </li>
+                <li>• After payment clears you can trigger the Gemini edit and download the result instantly.</li>
+                <li>
+                  • Need to make another edit? Refresh the page to launch a new paid session (or reuse this one while it
+                  stays active).
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  )
+}
+

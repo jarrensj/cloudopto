@@ -43,7 +43,13 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end gap-3 mb-6">
+          <Link
+            href="/edit"
+            className="inline-flex items-center gap-2 bg-white text-gray-900 border border-gray-200 px-4 py-2 rounded-lg hover:border-gray-300 hover:text-black transition-colors"
+          >
+            Edit
+          </Link>
           <Link
             href="/upload"
             className="inline-flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
