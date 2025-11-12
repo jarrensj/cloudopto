@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Network } from 'x402-next';
 
 export async function GET() {
@@ -7,7 +7,7 @@ export async function GET() {
     const network = process.env.NEXT_PUBLIC_NETWORK as Network;
     
     // Fetch all folders to build payment config
-    const { data: folders, error } = await supabase
+    const { data: folders, error } = await supabaseAdmin
       .from('folders')
       .select('slug, name, usdc_amount, wallet_address')
       .order('created_at', { ascending: false });

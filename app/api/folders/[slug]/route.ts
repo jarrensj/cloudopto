@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +9,7 @@ export async function GET(
     const { slug } = await params;
 
     // Fetch folder by slug
-    const { data: folder, error: folderError } = await supabase
+    const { data: folder, error: folderError } = await supabaseAdmin
       .from('folders')
       .select('*')
       .eq('slug', slug)
@@ -23,7 +23,7 @@ export async function GET(
     }
 
     // Fetch images for this folder
-    const { data: images, error: imagesError } = await supabase
+    const { data: images, error: imagesError } = await supabaseAdmin
       .from('images')
       .select('*')
       .eq('folder_id', folder.id)

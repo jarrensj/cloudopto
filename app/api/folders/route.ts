@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { uploadToS3 } from '@/lib/s3';
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create folder entry in database
-    const { data: folder, error: folderError } = await supabase
+    const { data: folder, error: folderError } = await supabaseAdmin
       .from('folders')
       .insert({
         name: folderName,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         const s3Url = await uploadToS3(buffer, fileName, image.type);
 
         // Create image record in database with S3 URL
-        const { data: imageData, error: imageError } = await supabase
+        const { data: imageData, error: imageError } = await supabaseAdmin
           .from('images')
           .insert({
             folder_id: folder.id,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const { data: folders, error } = await supabase
+    const { data: folders, error } = await supabaseAdmin
       .from('folders')
       .select('*')
       .order('created_at', { ascending: false });
