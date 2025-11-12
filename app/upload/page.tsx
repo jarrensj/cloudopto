@@ -19,6 +19,13 @@ export default function UploadPage() {
     }
   };
 
+  // Check if form is complete
+  const isFormComplete = folderName.trim() !== '' && 
+                         walletAddress.trim() !== '' && 
+                         usdcAmount.trim() !== '' && 
+                         parseFloat(usdcAmount) > 0 && 
+                         images.length > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUploading(true);
@@ -183,7 +190,7 @@ export default function UploadPage() {
           <div className="pt-4">
             <button
               type="submit"
-              disabled={isUploading}
+              disabled={isUploading || !isFormComplete}
               className="w-full bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isUploading ? 'Uploading...' : 'Create Folder & Upload'}
