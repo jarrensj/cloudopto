@@ -389,7 +389,7 @@ export default function EditPage() {
                     setGeneratedImage(null)
                     setError(null)
                   }}
-                  placeholder="Add any extra edits you want the model to focus on..."
+                  placeholder="Add any extra edits you want the model to focus on…"
                   className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
                   rows={4}
                 />
