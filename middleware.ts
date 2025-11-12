@@ -1,7 +1,7 @@
 import { Address } from 'viem'
 import { paymentMiddleware, Resource, Network } from 'x402-next'
 import { NextRequest } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 
 const address = process.env.NEXT_PUBLIC_RECEIVER_ADDRESS as Address
 const network = process.env.NEXT_PUBLIC_NETWORK as Network
@@ -10,7 +10,7 @@ const cdpClientKey = process.env.NEXT_PUBLIC_CDP_CLIENT_KEY as string
 
 // Fetch dynamic payment config from database
 async function getPaymentConfig() {
-  const { data: folders } = await supabase
+  const { data: folders } = await supabaseAdmin
     .from('folders')
     .select('slug, name, usdc_amount, wallet_address')
     .order('created_at', { ascending: false })
