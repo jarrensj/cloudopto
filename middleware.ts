@@ -8,6 +8,20 @@ const network = process.env.NEXT_PUBLIC_NETWORK as Network
 const facilitatorUrl = process.env.NEXT_PUBLIC_FACILITATOR_URL as Resource
 const cdpClientKey = process.env.NEXT_PUBLIC_CDP_CLIENT_KEY as string
 
+// Validate required environment variables
+if (!address || address.length === 0) {
+  throw new Error('NEXT_PUBLIC_RECEIVER_ADDRESS environment variable is required')
+}
+if (!network) {
+  throw new Error('NEXT_PUBLIC_NETWORK environment variable is required')
+}
+if (!facilitatorUrl) {
+  throw new Error('NEXT_PUBLIC_FACILITATOR_URL environment variable is required')
+}
+if (!cdpClientKey) {
+  throw new Error('NEXT_PUBLIC_CDP_CLIENT_KEY environment variable is required')
+}
+
 // Fetch dynamic payment config from database
 async function getPaymentConfig() {
   const { data: folders } = await supabase
@@ -32,6 +46,15 @@ async function getPaymentConfig() {
     price: '$0.10',
     config: {
       description: 'Access to premium content',
+    },
+    network,
+  }
+
+  // Add payment for edit confirmation
+  paymentConfig['/edit/confirmation'] = {
+    price: '$1.00',
+    config: {
+      description: 'Image editing with AI',
     },
     network,
   }
@@ -68,5 +91,7 @@ export const config = {
   matcher: [
     // Only match content routes, not API routes or static files
     '/content/:path*',
+    // Match edit confirmation for payment
+    '/edit/confirmation',
   ],
 }
